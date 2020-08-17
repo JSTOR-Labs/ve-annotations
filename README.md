@@ -1,8 +1,18 @@
-# MangoServer
-A Mongo-backed Annotation Server 
+# ve-annotations
+A W3C Web Annotation Server forked from https://github.com/azaroth42/MangoServer
 
-# Installation
+The forked MangoServer has been updated to provide Python 3 compatibility and support
+for use of a hosted MongoDB server at https://www.mongodb.com/cloud/atlas
 
-Run the following from within a virtual environment or use with sudo to install the required dependencies system-wide
+# Running locally
 
-` $ pip install -r requirements.txt `
+```bash
+docker build -t mango .
+docker run -it -p 8080:8080 mango
+```
+
+# Deploying to Google Cloud Run
+
+```bash
+./gcr-deploy.sh
+```

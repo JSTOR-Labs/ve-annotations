@@ -1,11 +1,12 @@
 {
-	"host": "localhost",
+	"host": "cluster0.llrbv.gcp.mongodb.net",
 	"port": 27017,
-	"database": "mango",
+	"database": "annotations",
 	"sort_keys": true,
 	"compact_json": false,
 	"indent_json": true,
-	"url_host": "http://iiifdev.getty.edu/",
-	"url_prefix": "annotations",
+	"url_host": "http://annotations.visual-essays.app",
+	"url_prefix": "",
 	"json_ld": true
 }
+

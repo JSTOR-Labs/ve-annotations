@@ -14,13 +14,10 @@ def now():
 container = {
  "@context": ["http://www.w3.org/ns/anno.jsonld", "http://www.w3c.org/ns/ldp.jsonld"],
  "type": ["BasicContainer", "AnnotationCollection"],
- "label": "A Basic Annotation Container",
+ "label": "A Basic Annotation Container for visual essays app",
  "creator": {
-    "id": "https://orcid.org/0000-0003-4441-6852",
-    "type": "Person",
- 	"name": "Rob Sanderson",
- 	"nickname": "azaroth42",
- 	"email": "mailto:azaroth42@gmail.com"
+ 	"name": "JSTOR Labs",
+ 	"email": "mailto:labs@ithaka.org"
  },
  "created": now(),
  "rights": "https://creativecommons.org/publicdomain/zero/1.0"

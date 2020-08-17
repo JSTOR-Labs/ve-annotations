@@ -4,6 +4,10 @@
 # All containers are Mongo collections, regardless of where they appear in the tree
 # All resources are in the appropriate collection
 
+import os
+SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
+BASEDIR = os.path.dirname(SCRIPT_DIR)
+
 import json
 from functools import partial
 import uuid
@@ -28,7 +32,7 @@ def now():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 def load_document_local(url):
-    if docCache.has_key(url):
+    if url in docCache:
         return docCache[url]
 
     doc = {
@@ -61,7 +65,7 @@ class MongoEncoder(json.JSONEncoder):
 
 class MangoServer(object):
 
-    def __init__(self, database="mango", host='localhost', port=27017,
+    def __init__(self, database="annotations", host='localhost', port=27017,
                  sort_keys=True, human_sort_keys=True, compact_json=False, indent_json=2,
                  url_host="http://localhost:8000/", url_prefix="", json_ld=True):
 
@@ -69,6 +73,9 @@ class MangoServer(object):
         self.mongo_host = host
         self.mongo_port = port
         self.mongo_db = database
+        with open(f'{BASEDIR}/atlas-creds', 'r') as fp:
+            self.atlas_user, self.atlas_password = fp.read().strip().split(':')
+
         self.connection = self._connect(database, host, port)
 
         # JSON Serialization options
@@ -96,7 +103,7 @@ class MangoServer(object):
         self.server_prefers = "description"
         self.require_if_match = False # For testing Mirador
 
-        fh = file('contexts/annotation_frame.jsonld')
+        fh = open('contexts/annotation_frame.jsonld', 'r')
         data = fh.read()
         fh.close()
         self.annoframe = json.loads(data)
@@ -156,7 +163,8 @@ class MangoServer(object):
         self.key_order_hash['contains'] = 5001
 
     def _connect(self, database, host=None, port=None):
-        return MongoClient(host=host, port=port)[database]
+        # return MongoClient(host=host, port=port)[database]
+        return MongoClient(f'mongodb+srv://{self.atlas_user}:{self.atlas_password}@{self.mongo_host}/?retryWrites=true&w=majority')['annotations']
 
     def _collection(self, container):
         if not self.connection:
@@ -214,7 +222,7 @@ class MangoServer(object):
 
     def _rdf_to_jsonld(self, b):
         fmt = request.headers['Content-Type']
-        if self.rdflib_format_map.has_key(fmt):
+        if fmt in self.rdflib_format_map:
             rdftype = self.rdflib_format_map[fmt]
             g = Graph()
             g.parse(data=b, format=rdftype)
@@ -254,14 +262,14 @@ class MangoServer(object):
                 js = request._json
                 if not js:
                     abort(400, "Empty JSON")
-            except Exception, e:
+            except Exception as e:
                 abort(400, "JSON is not well formed: {0}".format(e))
-        if js.has_key('_id'):
+        if '_id' in js:
             del js['_id']
-        if js.has_key('id'):
+        if 'id' in js:
             # Record old IRI in via
             if via:
-                if js.has_key('via'):
+                if 'via' in js:
                     v = js['via']
                     if type(v) != list:
                         v = [v]
@@ -274,15 +282,15 @@ class MangoServer(object):
         return js
 
     def decorate_annotation(self, js, uri):
-        if not js.has_key('created'):
+        if not 'created' in js:
             # Add created now() as created time
             js['created'] = now()
         else:
             js['modified'] = now()
         # if we have authentication, then add user attributes
-        if not js.has_key('id') and uri is not None:
+        if not 'id' in js and uri is not None:
             js['id'] = uri
-        if not js.has_key('canonical') and not js.has_key('via'):
+        if not 'canonical' in js and not 'via' in js:
             js['canonical'] = js['id']
         js['generator'] = self.server_identity
         js['generated'] = now()
@@ -312,11 +320,11 @@ class MangoServer(object):
                 if type(v) == list:
                     nl = []
                     for i in v:
-                        if self.rdflib_class_map.has_key(i):
+                        if i in self.rdflib_class_map:
                             nl.append(self.rdflib_class_map[i])
                     new['type'] = nl
                 else:
-                    if self.rdflib_class_map.has_key(v):
+                    if v in self.rdflib_class_map:
                         new['type'] = self.rdflib_class_map[v]
             elif type(v) == dict:
                 # recurse
@@ -374,7 +382,7 @@ class MangoServer(object):
                 else:
                     params.append((key, value))
             prefs.append((main, dict(params), q))
-        prefs.sort(lambda x, y: -cmp(x[2], y[2]))        
+        # prefs.sort(lambda x, y: -cmp(x[2], y[2]))        
         return prefs
 
     def _parse_prefer(self, value):
@@ -409,7 +417,7 @@ class MangoServer(object):
             prefs = self._parse_accept(accept)
             format = ""
             for p in prefs:
-                if self.rdflib_format_map.has_key(p[0]):
+                if p[0] in self.rdflib_format_map:
                     ct = p[0]
                     format = self.rdflib_format_map[p[0]]
                     break
@@ -433,7 +441,7 @@ class MangoServer(object):
 
         hashed = self._jsonify(data, uri)
         h = hashlib.md5()
-        h.update(hashed)
+        h.update(hashed.encode('utf-8'))
 
         response['ETag'] = h.hexdigest()
         if ct == self.json_content_type:
@@ -844,16 +852,12 @@ def main():
 
     run(host=host, port=port, app=mr.get_bottle_app(), debug=debug)
 
-def apache():
-    fh = file('config.json')
+if __name__ == "__main__":
+    main()
+else:
+    fh = open('config.json', 'r')
     data = fh.read()
     fh.close()
     conf = json.loads(data)
     ms = MangoServer(**conf)
-    return ms.get_bottle_app()
-
-if __name__ == "__main__":
-    main()
-else:
-    application = apache()
-
+    application = ms.get_bottle_app()
