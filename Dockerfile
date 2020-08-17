@@ -23,8 +23,8 @@ WORKDIR /usr/src/app
 
 ADD contexts contexts
 ADD mangoserver.py src/mangoserver.py
-ADD config.json config.json
-ADD atlas-creds atlas-creds
+ADD config.json .
+ADD atlas-creds .
 RUN echo '' > src/__init__.py
 
 ENV PORT 8080
