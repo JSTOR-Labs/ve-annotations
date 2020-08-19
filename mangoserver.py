@@ -303,7 +303,7 @@ class MangoServer(object):
         for tgt in tgts:
             if type(tgt) != dict:
                 tgt = {'id': tgt}
-            if tgt['id'].startswith(self.url_host):
+            if 'id' in tgt and tgt['id'].startswith(self.url_host):
                 # XXX Fetch target resource
                 # and copy properties
                 pass                
@@ -656,8 +656,9 @@ class MangoServer(object):
         return self._conneg(js, uri)        
 
     def delete_container(self, container):
-        coll = self._collection(container)
-        coll.drop()
+        print(f'delete_container {container}')
+        # coll = self._collection(container)
+        # coll.drop()
         response.status = 204
         return ""
 
@@ -708,12 +709,14 @@ class MangoServer(object):
 
     def put_resource(self, container, resource):
         # Update individual Annotation
+        print(f'put_resource: container={container} resource={resource}')
         coll = self._collection(container)
         js = self._fix_json()
         self.check_if_match(coll, container, resource) 
-        coll.replace_one({"_id": self._make_id(container, resource)}, js)
-        response.status = 202
         uri = self._make_uri(container, resource)
+        print(f'put_resource: _id={uri}')
+        coll.replace_one({"_id": uri}, js)
+        response.status = 202
         self.update_container_modified(coll)
         return self._conneg(js, uri)
 
@@ -728,9 +731,10 @@ class MangoServer(object):
 
     def delete_resource(self, container, resource):
         coll = self._collection(container)
-        uri = self._make_uri(container, resource) 
+        _id = self._make_uri(container, resource) 
         self.check_if_match(coll, container, resource)
-        coll.delete_one({"_id": self._make_id(container, resource)})
+        print(f'delete_resource: container={container} resource={resource} _id={uri}')
+        coll.delete_one({"_id": _id})
         self.update_container_modified(coll)
         response.status = 204
         return ""
