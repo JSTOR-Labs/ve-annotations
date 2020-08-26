@@ -60,3 +60,4 @@ target/
 *-creds
 
 build
+.vscode/settings.json

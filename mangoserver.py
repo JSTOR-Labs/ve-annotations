@@ -733,7 +733,7 @@ class MangoServer(object):
         coll = self._collection(container)
         _id = self._make_uri(container, resource) 
         self.check_if_match(coll, container, resource)
-        print(f'delete_resource: container={container} resource={resource} _id={uri}')
+        print(f'delete_resource: container={container} resource={resource} _id={_id}')
         coll.delete_one({"_id": _id})
         self.update_container_modified(coll)
         response.status = 204
