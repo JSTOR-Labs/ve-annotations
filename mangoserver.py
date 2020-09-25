@@ -583,7 +583,8 @@ class MangoServer(object):
             for what in cursor.limit(page_size):
                 myid = what['_id']
                 out = self._fix_json(what)
-                out['id'] = self._make_uri(container, self._unmake_id(myid))           
+                # out['id'] = self._make_uri(container, self._unmake_id(myid))
+                out['id'] = self._unmake_id(myid)
                 try:
                     # XXX This will kill any annotation level extensions
                     del out['@context']
@@ -664,7 +665,7 @@ class MangoServer(object):
 
     def get_resource(self, container, resource):
         coll = self._collection(container)
-        _id = self._make_uri(container, resource) 
+        _id = self._make_uri(container, resource)
         data = coll.find_one({"_id": _id})
         if not data:
             abort(404)
